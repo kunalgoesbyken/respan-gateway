@@ -261,10 +261,9 @@ fn audio_in_another_format_is_converted_to_the_sessions() {
 }
 
 #[test]
-fn another_formats_pcm_session_is_opened_at_the_24_khz_openai_takes() {
+fn a_pcm_session_is_opened_at_the_24_khz_openai_takes() {
     let mut session = Session::default();
     session.input_audio = Some(AudioFormat::pcm16(16_000));
-    session.output_audio = Some(AudioFormat::pcm16(16_000));
     let second: Vec<u8> = (0..16_000i16)
         .flat_map(|i| (i % 100).to_le_bytes())
         .collect();
@@ -276,14 +275,10 @@ fn another_formats_pcm_session_is_opened_at_the_24_khz_openai_takes() {
         native: None,
     };
     let written = sent(&[Input::Session(session), audio]).expect("written");
-    let format = |side: &str| written[0]["session"]["audio"][side]["format"].clone();
-    for side in ["input", "output"] {
-        assert_eq!(
-            format(side),
-            json!({"type": "audio/pcm", "rate": 24_000}),
-            "{side}"
-        );
-    }
+    assert_eq!(
+        written[0]["session"]["audio"]["input"]["format"],
+        json!({"type": "audio/pcm", "rate": 24_000})
+    );
     let data = crate::json::unbase64(&written[1]["audio"]).expect("base64");
     assert!((47_000..=48_000).contains(&data.len()), "{}", data.len());
 }

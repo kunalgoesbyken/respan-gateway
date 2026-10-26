@@ -243,10 +243,12 @@ impl Provider {
                 if s == Session::default() && !(opening && self.transcribing) {
                     return Ok(None);
                 }
-                for format in [&mut s.input_audio, &mut s.output_audio] {
-                    if let Some(f) = format.as_mut().filter(|f| f.encoding == Encoding::Pcm16) {
-                        *f = AudioFormat::pcm16(24_000);
-                    }
+                if let Some(f) = s
+                    .input_audio
+                    .as_mut()
+                    .filter(|f| f.encoding == Encoding::Pcm16)
+                {
+                    *f = AudioFormat::pcm16(24_000);
                 }
                 if let Some(format) = s.input_audio {
                     self.input = format;
