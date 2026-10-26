@@ -473,6 +473,11 @@ fn a_function_call_without_args_is_a_tool_call_of_no_arguments() {
         "{events:?}"
     );
     assert_eq!(decode_body(&chunk), events);
+    let body = body_of(&events).expect("body");
+    assert_eq!(
+        body["candidates"][0]["content"]["parts"][0]["functionCall"],
+        json!({"name": "now", "args": {}})
+    );
 }
 
 #[test]
