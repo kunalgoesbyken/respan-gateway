@@ -43,6 +43,10 @@ impl Client {
     pub(super) fn read(&mut self, raw: Bytes, out: &mut Vec<Input>) -> Result<(), Fault> {
         let v: Value =
             serde_json::from_slice(&raw).map_err(|_| invalid("a client's message is not JSON"))?;
+        let v = match v.get("setup") {
+            Some(_) => v,
+            None => camel_cased(v),
+        };
         let field = v
             .as_object()
             .filter(|m| m.len() == 1)
@@ -64,6 +68,35 @@ impl Client {
         }
         Ok(())
     }
+}
+
+fn camel_cased(v: Value) -> Value {
+    match v {
+        Value::Object(fields) => Value::Object(
+            fields
+                .into_iter()
+                .map(|(name, value)| match name.as_str() {
+                    "response" | "args" => (name, value),
+                    _ => (camel(&name), camel_cased(value)),
+                })
+                .collect(),
+        ),
+        Value::Array(items) => Value::Array(items.into_iter().map(camel_cased).collect()),
+        v => v,
+    }
+}
+
+fn camel(name: &str) -> String {
+    let mut words = name.split('_');
+    let first = words.next().unwrap_or_default().to_owned();
+    words.fold(first, |mut out, word| {
+        let mut chars = word.chars();
+        if let Some(c) = chars.next() {
+            out.extend(c.to_uppercase());
+            out.push_str(chars.as_str());
+        }
+        out
+    })
 }
 
 /// A message the Live API refuses, as it closes the session.

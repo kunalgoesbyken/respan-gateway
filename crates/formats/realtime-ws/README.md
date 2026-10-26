@@ -41,7 +41,9 @@ padded).
 `GeminiLive` does the same for the Live API's messages: a client's `setup`
 (first and once, its model without `models/`; a message of more than one
 field closes the session 1007), `clientContent` turns, `realtimeInput`
-audio and text, `activityEnd`, `toolResponse`; the server's
+audio and text, `activityEnd`, `toolResponse`, their fields in camelCase or
+in snake_case and their audio in standard or URL-safe base64, as Google's
+own SDKs send them; the server's
 `setupComplete`, model turns of audio and text, transcripts, `toolCall`,
 `interrupted`, `voiceActivity` (its `type` and `audioOffset`),
 `turnComplete` and `usageMetadata` (each turn's own counts). A

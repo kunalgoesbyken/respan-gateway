@@ -176,6 +176,49 @@ fn a_client_must_set_up_first_and_once_one_thing_a_message() {
 }
 
 #[test]
+fn a_google_sdks_snake_case_and_url_safe_messages_are_read_as_their_camel_case() {
+    let setup = json!({"setup": {"model": "models/m"}});
+    let sdk = [
+        setup.clone(),
+        json!({"realtime_input": {"audio": {"mime_type": "audio/pcm;rate=16000", "data": "-_8="}}}),
+        json!({"realtime_input": {"activity_end": {}}}),
+        json!({"client_content": {"turns": [{"role": "user", "parts": [{"text": "hi"}]}],
+            "turn_complete": true}}),
+        json!({"tool_response": {"function_responses": [
+            {"id": "call-1", "name": "lookup", "response": {"user_id": 7}}]}}),
+    ];
+    let camel = [
+        setup,
+        json!({"realtimeInput": {"audio": {"mimeType": "audio/pcm;rate=16000", "data": "+/8="}}}),
+        json!({"realtimeInput": {"activityEnd": {}}}),
+        json!({"clientContent": {"turns": [{"role": "user", "parts": [{"text": "hi"}]}],
+            "turnComplete": true}}),
+        json!({"toolResponse": {"functionResponses": [
+            {"id": "call-1", "name": "lookup", "response": {"user_id": 7}}]}}),
+    ];
+    let events = inputs(&sdk).expect("read");
+    let kinds: Vec<&str> = events.iter().map(kind).collect();
+    assert_eq!(
+        kinds,
+        [
+            "session",
+            "audio",
+            "commit",
+            "respond",
+            "message",
+            "respond",
+            "tool_result",
+            "respond"
+        ]
+    );
+    assert_eq!(events, inputs(&camel).expect("read"));
+    let Input::ToolResult(result) = &events[6] else {
+        panic!("{events:?}")
+    };
+    assert_eq!(result.output, r#"{"user_id":7}"#);
+}
+
+#[test]
 fn a_client_ends_its_turns_with_manual_detection() {
     let messages = [
         json!({"setup": {"model": "models/m",
