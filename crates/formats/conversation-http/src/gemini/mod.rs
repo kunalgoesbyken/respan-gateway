@@ -61,8 +61,9 @@
 //!   `SAFETY`, `RECITATION`, `BLOCKLIST` and the like are filtered; any other
 //!   is native to this format. A prompt Gemini blocks (`promptFeedback`
 //!   with no candidate) is filtered.
-//! - `usageMetadata` gives [`Output::Usage`]: `promptTokenCount` is the
-//!   input, `candidatesTokenCount` and `thoughtsTokenCount` the output,
+//! - `usageMetadata` gives [`Output::Usage`]: `promptTokenCount` and
+//!   `toolUsePromptTokenCount` are the input, `candidatesTokenCount` and
+//!   `thoughtsTokenCount` the output,
 //!   `cachedContentTokenCount` the cached input.
 //! - What else a response says is an inert [`Output::Native`] of this format
 //!   (`candidate_fields`, `response_fields`, `usage_fields`), which another
