@@ -176,27 +176,33 @@ fn a_client_must_set_up_first_and_once_one_thing_a_message() {
 }
 
 #[test]
-fn a_google_sdks_snake_case_and_url_safe_messages_are_read_as_their_camel_case() {
+fn the_python_sdks_snake_case_and_url_safe_messages_are_read_as_their_camel_case() {
     let setup = json!({"setup": {"model": "models/m"}});
-    let sdk = [
+    let turn = json!([{"role": "user", "parts": [{"text": "hi"}]}]);
+    let answer = json!([{"id": "call-1", "name": "lookup", "response": {"user_id": 7}}]);
+    let audio = |name: &str, data: &str| json!({name: "audio/pcm;rate=16000", "data": data});
+    let send = [
         setup.clone(),
-        json!({"realtime_input": {"audio": {"mime_type": "audio/pcm;rate=16000", "data": "-_8="}}}),
+        json!({"realtime_input": {"audio": audio("mime_type", "-_8=")}}),
+        json!({"realtime_input": {"activityEnd": {}}}),
+        json!({"client_content": {"turns": turn, "turnComplete": true}}),
+        json!({"tool_response": {"functionResponses": answer}}),
+    ];
+    let deprecated_send = [
+        setup.clone(),
+        json!({"realtime_input": {"audio": audio("mime_type", "-_8=")}}),
         json!({"realtime_input": {"activity_end": {}}}),
-        json!({"client_content": {"turns": [{"role": "user", "parts": [{"text": "hi"}]}],
-            "turn_complete": true}}),
-        json!({"tool_response": {"function_responses": [
-            {"id": "call-1", "name": "lookup", "response": {"user_id": 7}}]}}),
+        json!({"client_content": {"turns": turn, "turn_complete": true}}),
+        json!({"tool_response": {"function_responses": answer}}),
     ];
     let camel = [
         setup,
-        json!({"realtimeInput": {"audio": {"mimeType": "audio/pcm;rate=16000", "data": "+/8="}}}),
+        json!({"realtimeInput": {"audio": audio("mimeType", "+/8=")}}),
         json!({"realtimeInput": {"activityEnd": {}}}),
-        json!({"clientContent": {"turns": [{"role": "user", "parts": [{"text": "hi"}]}],
-            "turnComplete": true}}),
-        json!({"toolResponse": {"functionResponses": [
-            {"id": "call-1", "name": "lookup", "response": {"user_id": 7}}]}}),
+        json!({"clientContent": {"turns": turn, "turnComplete": true}}),
+        json!({"toolResponse": {"functionResponses": answer}}),
     ];
-    let events = inputs(&sdk).expect("read");
+    let events = inputs(&camel).expect("read");
     let kinds: Vec<&str> = events.iter().map(kind).collect();
     assert_eq!(
         kinds,
@@ -211,11 +217,27 @@ fn a_google_sdks_snake_case_and_url_safe_messages_are_read_as_their_camel_case()
             "respond"
         ]
     );
-    assert_eq!(events, inputs(&camel).expect("read"));
-    let Input::ToolResult(result) = &events[6] else {
-        panic!("{events:?}")
-    };
-    assert_eq!(result.output, r#"{"user_id":7}"#);
+    assert_eq!(inputs(&send).expect("read"), events);
+    assert_eq!(inputs(&deprecated_send).expect("read"), events);
+}
+
+#[test]
+fn a_clients_own_json_is_relayed_as_it_came() {
+    let messages = [
+        json!({"setup": {"model": "models/m"}}),
+        json!({"client_content": {"turns": [{"role": "user", "parts": [
+            {"text": "hi", "partMetadata": {"source_file": "a"}}]}], "turn_complete": true}}),
+        json!({"contextUpdate": {"tools": [{"functionDeclarations": [{"name": "lookup",
+            "parameters": {"type": "OBJECT", "properties": {"user_id": {"type": "STRING"}},
+                "required": ["user_id"]}}]}]}}),
+    ];
+    let events = inputs(&messages).expect("read");
+    let written = sent(&Shared::default(), &events).expect("written");
+    assert_eq!(
+        written[1]["clientContent"]["turns"][0]["parts"][0]["partMetadata"],
+        json!({"source_file": "a"})
+    );
+    assert_eq!(written[2], messages[2]);
 }
 
 #[test]

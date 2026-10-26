@@ -35,15 +35,14 @@ What the kind has no place for stays OpenAI's: an event's other fields in
 its `native`, as the frame has them, and events of no form in the kind,
 such as its items and content parts, as `Output::Native`. A field is taken
 as the kind's only where it writes back as it came, so a relay to OpenAI
-keeps what every event says, not its exact bytes (audio is base64 anew,
-padded).
+keeps what every event says, not its exact bytes (audio, read as standard
+or URL-safe base64, padded or not, is written as standard base64, padded).
 
 `GeminiLive` does the same for the Live API's messages: a client's `setup`
 (first and once, its model without `models/`; a message of more than one
 field closes the session 1007), `clientContent` turns, `realtimeInput`
-audio and text, `activityEnd`, `toolResponse`, their fields in camelCase or
-in snake_case and their audio in standard or URL-safe base64, as Google's
-own SDKs send them; the server's
+audio and text, `activityEnd`, `toolResponse`, their names in camelCase or
+in the snake_case Google's Python SDK sends; the server's
 `setupComplete`, model turns of audio and text, transcripts, `toolCall`,
 `interrupted`, `voiceActivity` (its `type` and `audioOffset`),
 `turnComplete` and `usageMetadata` (each turn's own counts). A
